@@ -46,6 +46,13 @@
   const netCanvas = document.getElementById('net');
   const nctx = netCanvas && netCanvas.getContext('2d');
   const NODE_COUNT = 55, LINK_DIST = 120;
+  /* Drift speed, in canvas px per frame per axis, before the DPR scaling below.
+     0.12 measured 0.0301 px/frame = ~1.8 px/sec: real, but below the threshold
+     where you can actually watch a node travel, so the field read as frozen.
+     0.60 is 5x that, ~9 px/sec, which drifts noticeably without pulling focus
+     from the content. The * DPR keeps the movement in CSS pixels identical on
+     high-DPI screens, since the canvas is scaled by the same factor. */
+  const NODE_SPEED = 0.6;
   let netW = 0, netH = 0, netRaf = 0;
   let nodes = [];
 
@@ -57,8 +64,8 @@
     for (let i = 0; i < NODE_COUNT; i++) {
       nodes.push({
         x: Math.random() * netW, y: Math.random() * netH,
-        vx: (Math.random() - 0.5) * 0.12 * DPR,
-        vy: (Math.random() - 0.5) * 0.12 * DPR
+        vx: (Math.random() - 0.5) * NODE_SPEED * DPR,
+        vy: (Math.random() - 0.5) * NODE_SPEED * DPR
       });
     }
   }

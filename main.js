@@ -175,6 +175,7 @@
   }
 
   /* image lightbox — native <dialog> handles the focus trap, Escape and the dim backdrop */
+  const PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   const box = $('#lightbox'), boxImg = $('#lightbox-img'), boxCap = $('#lightbox-cap');
   function openLightbox(trigger) {
     boxImg.src = trigger.dataset.full;
@@ -185,20 +186,43 @@
   if (box) {
     $('#lightbox-close').addEventListener('click', () => box.close());
     box.addEventListener('click', e => { if (e.target === box) box.close(); });
-    box.addEventListener('close', () => { boxImg.src = ''; });
+    /* back to the 1x1 placeholder rather than a bare src="", which is not a
+       valid source and some browsers resolve to the page URL */
+    box.addEventListener('close', () => { boxImg.src = PLACEHOLDER; });
   }
 
-  /* contact form: no backend, so compose a mailto instead */
+  /* contact form — Web3Forms. The form posts to their API with no backend of
+     our own; the action/method stay in index.html as a fallback that still
+     works if this script never runs. Here we upgrade it to a fetch so the
+     visitor sees success or failure where the form is, instead of being
+     bounced to another page. */
   const form = $('#contact-form');
   if (form) {
-    form.addEventListener('submit', e => {
+    const btn = $('#cf-send'), note = $('#cf-status');
+    const say = (msg, ok) => {
+      note.textContent = msg;
+      note.classList.toggle('ok', ok);
+      note.classList.toggle('err', !ok);
+      note.hidden = false;
+    };
+    form.addEventListener('submit', async e => {
       e.preventDefault();
-      const name = form.name.value.trim();
-      const email = form.email.value.trim();
-      const message = form.message.value.trim();
-      const subject = encodeURIComponent('Portfolio message from ' + (name || 'someone'));
-      const body = encodeURIComponent('Name: ' + name + '\nEmail: ' + email + '\n\n' + message);
-      window.location.href = 'mailto:shaliniamalu2007@gmail.com?subject=' + subject + '&body=' + body;
+      const label = btn.innerHTML;
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      note.hidden = true;
+      try {
+        const res = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.message || 'The form service rejected the message.');
+        form.reset();
+        say(data.message || 'Message sent — thanks for reaching out.', true);
+      } catch (err) {
+        say(err.message || 'Could not send the message. Please email me directly.', false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = label;
+      }
     });
   }
 
@@ -224,9 +248,20 @@
   }
 
   /* Vanta.NET: libraries only load when the effect will actually run; tune so it stays behind the content */
+  const CDN = {
+    three: 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js',
+    vanta: 'https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.net.min.js'
+  };
+  /* Rejects with an error that carries the URL, so a failure names the exact
+     resource instead of leaving an anonymous rejected promise behind. */
   const loadScript = src => new Promise((res, rej) => {
     const s = document.createElement('script');
-    s.src = src; s.async = true; s.onload = res; s.onerror = rej;
+    s.src = src; s.async = true; s.onload = res;
+    s.onerror = () => {
+      const err = new Error('could not be fetched (offline, blocked, or 404)');
+      err.src = src;
+      rej(err);
+    };
     document.head.appendChild(s);
   });
   const startVanta = async () => {
@@ -235,8 +270,14 @@
     const saveData = navigator.connection && navigator.connection.saveData;
     if (reduce || weak || saveData) return;
     try {
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.net.min.js');
+      await loadScript(CDN.three);
+      if (!window.THREE) { const e = new Error('loaded but did not define window.THREE'); e.src = CDN.three; throw e; }
+      await loadScript(CDN.vanta);
+      if (!window.VANTA || typeof window.VANTA.NET !== 'function') {
+        const e = new Error('loaded but did not define window.VANTA.NET');
+        e.src = CDN.vanta;
+        throw e;
+      }
       const small = innerWidth < 768;
       window.VANTA.NET({
         el: '#vanta-background',
@@ -245,7 +286,12 @@
         color: 0x71ff00, backgroundColor: 0x050002,
         points: small ? 5 : 8, spacing: small ? 22 : 20, maxDistance: small ? 22 : 26
       });
-    } catch (err) { /* the plain background is the fallback */ }
+    } catch (err) {
+      /* Console only, on purpose. The flat background is a perfectly good
+         fallback and no visitor should ever see a broken-effect notice, but a
+         silent catch makes an adblocker or a bad CDN impossible to diagnose. */
+      console.error('[vanta] background disabled — ' + (err.src || CDN.vanta) + ' ' + err.message);
+    }
   };
   window.addEventListener('load', () => (window.requestIdleCallback || setTimeout)(startVanta));
 })();

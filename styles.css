@@ -20,7 +20,7 @@ a:hover{text-decoration:underline}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 .ic{width:18px;height:18px;flex:none}
 
-/* background â€” Vanta stays behind a strong veil so content wins */
+/* background — Vanta stays behind a strong veil so content wins */
 #vanta-background{position:fixed;inset:0;z-index:-2;background:var(--bg)}
 .veil{position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:radial-gradient(ellipse at 70% 15%,rgba(5,0,2,.52),rgba(5,0,2,.82) 60%,rgba(5,0,2,.94) 100%),rgba(5,0,2,.56)}
@@ -58,7 +58,7 @@ h3{font-size:1.12rem;font-weight:600;margin-bottom:10px}
 .tagline{font-weight:500;color:var(--t1);margin:0 0 20px}
 .tagline span{color:var(--g)}
 .lead{color:var(--t2);max-width:56ch;margin:0 0 26px}
-.prose p,.about-text p{color:var(--t2);margin:0 0 16px;max-width:62ch}
+.about-text p{color:var(--t2);margin:0 0 16px;max-width:62ch}
 
 /* buttons */
 .actions{display:flex;flex-wrap:wrap;gap:12px}
@@ -72,9 +72,10 @@ h3{font-size:1.12rem;font-weight:600;margin-bottom:10px}
    number: it is the viewport at which .wrap reaches its 1072px max, the
    first width where a 1fr/1fr split gives each column 514px. Below it
    the shield centres under the text instead of being squeezed; below
-   768px it is hidden and shield.js never starts. */
+   768px it is hidden and shield.js parks on a single frame. */
 .hero-grid{display:grid;gap:48px;align-items:center}
 @media(min-width:1120px){.hero-grid{grid-template-columns:1fr 1fr;gap:44px}}
+@media(max-width:767px){.hero-grid{gap:36px}}
 
 /* the node network behind the page. Fixed and pointer-transparent, so it
    costs the reader nothing and can never eat a click. Delete the canvas in
@@ -108,28 +109,6 @@ h3{font-size:1.12rem;font-weight:600;margin-bottom:10px}
 }
 
 
-/* UNUSED - kept only so the portrait can be brought back by dropping its
-   <figure class="photo"> into the hero grid. The hero right-hand slot is now
-   the shield above, and nothing in index.html references these rules. The
-   image itself is still at assets/images/profile.jpg. */
-.photo{position:relative;margin:0;width:100%;max-width:420px;aspect-ratio:4/5;justify-self:center;border:1px solid var(--b1);border-radius:3px;background:linear-gradient(135deg,rgba(113,255,0,.06),rgba(15,8,12,.6) 55%),#0b0508;display:grid;place-items:center;overflow:hidden;transition:border-color .3s,box-shadow .4s}
-.photo:hover{border-color:var(--b2)}
-.photo::before,.photo::after{content:'';position:absolute;width:20px;height:20px;z-index:4;border:2px solid var(--g)}
-.photo::before{top:12px;left:12px;border-right:0;border-bottom:0}
-.photo::after{bottom:12px;right:12px;border-left:0;border-top:0}
-.photo-fill{text-align:center;color:var(--t3);position:relative;z-index:1}
-.photo-fill span{display:block;font-size:.85rem}
-.photo-fill .mono{font-size:.78rem;letter-spacing:.28em;color:var(--g);margin-bottom:8px}
-.photo img{position:absolute;inset:0;z-index:3;width:100%;height:100%;object-fit:cover;object-position:50% 40%;opacity:0;transition:opacity .4s;border-radius:3px}
-.photo.has-photo .photo-fill{opacity:0}
-.photo.has-photo img{opacity:1}
-.photo.has-photo:hover img{transform:scale(1.02)}
-@media(min-width:768px){
-  .hero-grid .photo{max-width:440px}
-  .hero-grid .photo.has-photo{box-shadow:0 0 0 12px rgba(113,255,0,.045),0 40px 100px -70px rgba(113,255,0,.55)}
-}
-@media(max-width:767px){.hero-grid{gap:36px}.photo{max-width:320px}}
-
 /* about */
 .about-grid{display:grid;gap:36px}
 @media(min-width:820px){.about-grid{grid-template-columns:1.1fr .9fr;align-items:start}}
@@ -156,19 +135,19 @@ h3{font-size:1.12rem;font-weight:600;margin-bottom:10px}
 .status{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--g);margin:0 0 10px}
 
 /* plain list markers */
-.ticks,.plain{list-style:none;margin:0;padding:0}
+.plain{list-style:none;margin:0;padding:0}
 .plain li{position:relative;padding-left:18px;color:var(--t2);margin-bottom:7px;font-size:.93rem}
 .plain li::before{content:'';position:absolute;left:0;top:.68em;width:6px;height:6px;background:var(--g)}
 .plain li:last-child{margin-bottom:0}
 
-/* skills â€” 3-column category cards */
+/* skills — 3-column category cards */
 .skill-grid{display:grid;gap:20px;grid-template-columns:1fr}
 @media(min-width:700px){.skill-grid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1000px){.skill-grid{grid-template-columns:repeat(3,1fr)}}
 .card-icon{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--b1);border-radius:3px;color:var(--g);margin-bottom:16px;background:rgba(113,255,0,.05)}
 .card-icon .ic{width:20px;height:20px}
 
-/* projects â€” 3-column grid with image areas */
+/* projects — 3-column grid with image areas */
 .project-grid{display:grid;gap:24px;grid-template-columns:1fr}
 @media(min-width:700px){.project-grid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1000px){.project-grid{grid-template-columns:repeat(3,1fr)}}
@@ -187,7 +166,7 @@ h3{font-size:1.12rem;font-weight:600;margin-bottom:10px}
 .links{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .note{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--t3)}
 
-/* achievements â€” compact cards, the full story in a dialog.
+/* achievements — compact cards, the full story in a dialog.
    A card holds only the facts and at most one photo, so its height follows its
    own content: a photo-heavy hackathon can no longer stretch the whole grid,
    and a short certification sits at its natural height. */
@@ -206,19 +185,19 @@ h3{font-size:1.12rem;font-weight:600;margin-bottom:10px}
 .f-row .k{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-right:8px}
 .ach-cta{width:100%;justify-content:space-between;margin-top:auto}
 
-/* the single photo preview â€” only rendered once a path is filled in, and the
+/* the single photo preview — only rendered once a path is filled in, and the
    label sits behind it so a missing file degrades to a quiet caption */
 .ach-shots{margin:0 0 16px}
 .ach-photo{position:relative;margin:0;aspect-ratio:16/9;border:1px solid var(--b1);border-radius:3px;overflow:hidden;background:linear-gradient(135deg,rgba(113,255,0,.05),rgba(15,8,12,.5) 60%),#0b0508;display:grid;place-items:center}
 .ach-photo span{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)}
 .ach-photo img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:cover}
 
-/* a reserved entry, not a real one â€” a slim full-width note instead of an
+/* a reserved entry, not a real one — a slim full-width note instead of an
    empty card, so it never reserves a square of the grid */
 .soon-strip{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0;padding:11px 16px;border:1px dashed var(--b1);border-radius:3px;color:var(--t3);font-size:.85rem}
 .soon-strip .mono{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--g)}
 
-/* achievement details dialog â€” the write-up and every photo, out of the grid */
+/* achievement details dialog — the write-up and every photo, out of the grid */
 .ach-modal{width:min(720px,94vw);max-height:86vh;overflow:auto;border:1px solid var(--b1);border-radius:3px;background:rgba(5,0,2,.97);color:var(--t1);padding:22px}
 .ach-modal::backdrop{background:rgba(5,0,2,.88)}
 .ach-modal h3{font-size:1.2rem;margin:0 0 12px}
@@ -249,7 +228,7 @@ h3{font-size:1.12rem;font-weight:600;margin-bottom:10px}
 .filters button:hover{border-color:var(--b2);color:var(--t1)}
 .filters button[aria-pressed="true"]{color:var(--g);border-color:var(--g)}
 
-/* contact â€” two-column */
+/* contact — two-column */
 .contact-grid{display:grid;gap:32px;align-items:start}
 @media(min-width:820px){.contact-grid{grid-template-columns:.9fr 1.1fr}}
 .contact-info h3{margin-bottom:18px}
@@ -269,6 +248,13 @@ input::placeholder,textarea::placeholder{color:var(--t3);opacity:.7}
 input:focus,textarea:focus{outline:none;border-color:var(--b2);box-shadow:0 0 0 2px rgba(113,255,0,.12)}
 textarea{min-height:130px;resize:vertical}
 .form-note{font-size:.7rem;color:var(--t3);margin:14px 0 0}
+.form-note.ok{color:var(--g)}
+.form-note.err{color:#ff7a6b}
+/* honeypot: off-screen, not display:none — some bots skip hidden fields.
+   padding/border are reset because the bare `input` rule above would give a
+   1px box an 11px/13px pad, and the browser then floors it back to a size. */
+.hp{position:absolute;left:-9999px;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 
 /* footer */
 footer{border-top:1px solid var(--b1);padding:28px 0;color:var(--t2);font-size:.85rem;background:rgba(5,0,2,.88)}
