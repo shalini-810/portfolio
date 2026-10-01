@@ -53,8 +53,18 @@
      from the content. The * DPR keeps the movement in CSS pixels identical on
      high-DPI screens, since the canvas is scaled by the same factor. */
   const NODE_SPEED = 0.6;
+  /* The pointer, in CSS px against the centre of the screen. PARALLAX is how
+     far the whole field leans at a corner, PULL how close a node has to be
+     before the cursor shoves it aside, and GLOW the radius of the light that
+     follows the cursor. All three are multiplied by DPR at use, so the effect
+     is the same physical size on a retina screen as on a 1x one. */
+  const PARALLAX = 26, PULL = 90, GLOW = 130;
   let netW = 0, netH = 0, netRaf = 0;
   let nodes = [];
+  /* ptr.active is false until the pointer actually moves, so the field starts
+     centred rather than leaning at a cursor that is parked at 0,0. */
+  const ptr = { x: 0, y: 0, active: false };
+  let parX = 0, parY = 0;                            // the eased lean
 
   function resizeNet() {
     if (!nctx) return;
@@ -62,10 +72,15 @@
     netH = netCanvas.height = Math.round(innerHeight * DPR);
     nodes = [];
     for (let i = 0; i < NODE_COUNT; i++) {
+      const x = Math.random() * netW, y = Math.random() * netH;
       nodes.push({
-        x: Math.random() * netW, y: Math.random() * netH,
+        x, y,
         vx: (Math.random() - 0.5) * NODE_SPEED * DPR,
-        vy: (Math.random() - 0.5) * NODE_SPEED * DPR
+        vy: (Math.random() - 0.5) * NODE_SPEED * DPR,
+        /* where it gets painted, and how near the cursor it is. drawNet
+           rewrites both every frame; sx/sy start on the node itself so a
+           reader never sees a node parked at the origin. */
+        sx: x, sy: y, hot: 0
       });
     }
   }
@@ -75,32 +90,75 @@
     nctx.clearRect(0, 0, netW, netH);
     nctx.lineWidth = 1;
 
+    /* The lean chases the pointer's offset from the middle of the screen
+       instead of snapping to it, so the field drifts after the cursor the way
+       something with mass would. Fraction of the way there per frame, so the
+       settle time is in frames and does not drift with the refresh rate. */
+    const tx = ptr.active ? (ptr.x / netW - 0.5) * PARALLAX * DPR : 0;
+    const ty = ptr.active ? (ptr.y / netH - 0.5) * PARALLAX * DPR : 0;
+    parX += (tx - parX) * 0.06;
+    parY += (ty - parY) * 0.06;
+
+    /* The light that follows the cursor, painted under the field so the lines
+       read as lit by it rather than floating over it. */
+    if (ptr.active) {
+      const r = GLOW * DPR;
+      const g = nctx.createRadialGradient(ptr.x, ptr.y, 0, ptr.x, ptr.y, r);
+      g.addColorStop(0, 'rgba(' + ACCENT_RGB + ',0.10)');
+      g.addColorStop(1, 'rgba(' + ACCENT_RGB + ',0)');
+      nctx.fillStyle = g;
+      nctx.fillRect(ptr.x - r, ptr.y - r, r * 2, r * 2);
+    }
+
     for (const n of nodes) {
       n.x += n.vx; n.y += n.vy;
       if (n.x < 0 || n.x > netW) n.vx *= -1;
       if (n.y < 0 || n.y > netH) n.vy *= -1;
+
+      /* Where the node is actually painted: its own position, plus the lean,
+         plus a shove away from the cursor that fades out with distance. The
+         shove is a per-frame offset and never written back into n.x/n.y, so
+         the drift and the cursor can never contaminate each other's maths.
+         n.hot is that same proximity, kept for the links and the node itself. */
+      let ox = 0, oy = 0, hot = 0;
+      if (ptr.active) {
+        const dx = n.x - ptr.x, dy = n.y - ptr.y;
+        const d = Math.hypot(dx, dy);
+        if (d < PULL * DPR) {
+          hot = 1 - d / (PULL * DPR);
+          hot *= hot;                               // squared: fades off gently
+          ox = dx * hot * 0.3;
+          oy = dy * hot * 0.3;
+        }
+      }
+      n.sx = n.x + parX + ox;
+      n.sy = n.y + parY + oy;
+      n.hot = hot;
     }
 
     /* every node is tested against every other one, but only the pairs close
-       enough to see get a line, and the closer they are the brighter it is */
+       enough to see get a line, and the closer they are the brighter it is.
+       A line touching a node the cursor is near brightens with it, which is
+       what makes the mesh look like it is conducting. */
     const maxD = LINK_DIST * DPR;
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i], b = nodes[j];
-        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        const d = Math.hypot(a.sx - b.sx, a.sy - b.sy);
         if (d >= maxD) continue;
-        nctx.strokeStyle = 'rgba(' + ACCENT_RGB + ',' + (0.06 * (1 - d / maxD)).toFixed(3) + ')';
+        const lit = Math.max(a.hot, b.hot);
+        nctx.strokeStyle = 'rgba(' + ACCENT_RGB + ',' + (0.06 * (1 - d / maxD) + lit * 0.5).toFixed(3) + ')';
         nctx.beginPath();
-        nctx.moveTo(a.x, a.y);
-        nctx.lineTo(b.x, b.y);
+        nctx.moveTo(a.sx, a.sy);
+        nctx.lineTo(b.sx, b.sy);
         nctx.stroke();
       }
     }
 
-    nctx.fillStyle = 'rgba(' + ACCENT_RGB + ',0.25)';
     for (const n of nodes) {
+      nctx.fillStyle = 'rgba(' + ACCENT_RGB + ',' + (0.25 + n.hot * 0.6).toFixed(3) + ')';
       nctx.beginPath();
-      nctx.arc(n.x, n.y, 1.2 * DPR, 0, Math.PI * 2);
+      nctx.arc(n.sx, n.sy, (1.2 + n.hot * 1.6) * DPR, 0, Math.PI * 2);
       nctx.fill();
     }
   }
@@ -123,6 +181,23 @@
     addEventListener('resize', resizeNet);
     document.addEventListener('visibilitychange', () => (document.hidden ? pauseNet() : playNet()));
     if (reduced.matches) drawNet(); else playNet();
+
+    /* The pointer, listened for on the window rather than on the canvas: the
+       canvas is pointer-events:none so it can never eat a click, which also
+       means it never sees a move. Coarse pointers are skipped on purpose —
+       a finger dragging the page would drag the field with it, which reads as
+       a glitch rather than a response. passive, because none of this scrolls
+       anything and the page must not wait on it. */
+    if (matchMedia('(pointer: fine)').matches) {
+      addEventListener('pointermove', e => {
+        ptr.x = e.clientX * DPR;
+        ptr.y = e.clientY * DPR;
+        ptr.active = true;
+      }, { passive: true });
+      /* Leaving the window drops the target back to the middle, so the lean
+         eases away instead of freezing at whatever angle it was left. */
+      document.addEventListener('pointerleave', () => { ptr.active = false; });
+    }
   }
 
   /* ============================ the shield ============================ */

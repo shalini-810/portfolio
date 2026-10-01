@@ -20,10 +20,14 @@ a:hover{text-decoration:underline}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 .ic{width:18px;height:18px;flex:none}
 
-/* background — Vanta stays behind a strong veil so content wins */
+/* background — Vanta stays behind a strong veil so content wins. Every alpha
+   is 0.875x the value it used to be, a 12.5% cut applied uniformly so the
+   falloff keeps its shape and the text keeps its contrast: the veil was
+   opaque enough (79-97% once the flat layer composites under the gradient)
+   to swallow most of the Vanta network behind it. */
 #vanta-background{position:fixed;inset:0;z-index:-2;background:var(--bg)}
 .veil{position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(ellipse at 70% 15%,rgba(5,0,2,.52),rgba(5,0,2,.82) 60%,rgba(5,0,2,.94) 100%),rgba(5,0,2,.56)}
+  background:radial-gradient(ellipse at 70% 15%,rgba(5,0,2,.455),rgba(5,0,2,.718) 60%,rgba(5,0,2,.823) 100%),rgba(5,0,2,.49)}
 
 /* nav */
 header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(5,0,2,.92);border-bottom:1px solid var(--b1);backdrop-filter:blur(6px)}

@@ -247,18 +247,34 @@
     $$('main section[id]').forEach(s => so.observe(s));
   }
 
-  /* Vanta.NET: libraries only load when the effect will actually run; tune so it stays behind the content */
-  const CDN = {
-    three: 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js',
-    vanta: 'https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.net.min.js'
+  /* Vanta.NET: libraries only load when the effect will actually run; tune so it stays behind the content.
+
+     Vendored, not CDN. The two files are the exact builds the site used to
+     pull from cdnjs/jsdelivr, byte for byte, so the effect is unchanged — but
+     the background no longer depends on a third party being reachable, and it
+     survives an adblocker, an offline machine or a locked-down network. Both
+     are MIT; their licences sit next to them.
+
+       three.r134.min.js        three.js r134      (npm three@0.134.0)
+         sha256 74782bdbcf6518f7745ed77035968fcae95ed4ab5c9a0f90cf646a69c20785ec
+       vanta.net.0.5.24.min.js  vanta.js 0.5.24    (npm vanta@0.5.24)
+         sha256 76fe5829c73c27aa4f357200997c160523277c0d0bdb81f35d5cfb818cc3cb96c6
+
+     Relative paths on purpose: the page is served from the repo root, and this
+     keeps working unchanged under any sub-path a host might mount it at.
+     Order is load-bearing — vanta reads window.THREE once, while it is being
+     evaluated, so three has to be there first or every effect comes up empty. */
+  const VENDOR = {
+    three: 'assets/vendor/three.r134.min.js',
+    vanta: 'assets/vendor/vanta.net.0.5.24.min.js'
   };
-  /* Rejects with an error that carries the URL, so a failure names the exact
+  /* Rejects with an error that carries the path, so a failure names the exact
      resource instead of leaving an anonymous rejected promise behind. */
   const loadScript = src => new Promise((res, rej) => {
     const s = document.createElement('script');
     s.src = src; s.async = true; s.onload = res;
     s.onerror = () => {
-      const err = new Error('could not be fetched (offline, blocked, or 404)');
+      const err = new Error('could not be fetched (missing from the deploy, blocked, or 404)');
       err.src = src;
       rej(err);
     };
@@ -270,12 +286,12 @@
     const saveData = navigator.connection && navigator.connection.saveData;
     if (reduce || weak || saveData) return;
     try {
-      await loadScript(CDN.three);
-      if (!window.THREE) { const e = new Error('loaded but did not define window.THREE'); e.src = CDN.three; throw e; }
-      await loadScript(CDN.vanta);
+      await loadScript(VENDOR.three);
+      if (!window.THREE) { const e = new Error('loaded but did not define window.THREE'); e.src = VENDOR.three; throw e; }
+      await loadScript(VENDOR.vanta);
       if (!window.VANTA || typeof window.VANTA.NET !== 'function') {
         const e = new Error('loaded but did not define window.VANTA.NET');
-        e.src = CDN.vanta;
+        e.src = VENDOR.vanta;
         throw e;
       }
       const small = innerWidth < 768;
@@ -289,8 +305,9 @@
     } catch (err) {
       /* Console only, on purpose. The flat background is a perfectly good
          fallback and no visitor should ever see a broken-effect notice, but a
-         silent catch makes an adblocker or a bad CDN impossible to diagnose. */
-      console.error('[vanta] background disabled — ' + (err.src || CDN.vanta) + ' ' + err.message);
+         silent catch makes a bad deploy or a missing vendor file impossible
+         to diagnose. */
+      console.error('[vanta] background disabled — ' + (err.src || VENDOR.vanta) + ' ' + err.message);
     }
   };
   window.addEventListener('load', () => (window.requestIdleCallback || setTimeout)(startVanta));
